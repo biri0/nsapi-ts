@@ -250,13 +250,47 @@ describe("XML parsers", () => {
       ["unread", "nextissue", "nextissuetime", "issues", "issuesummary", "notices"] as const,
     );
 
-    expect(data.unread).toBe(7);
+    expect(data.unread.total).toBe(7);
+    expect(data.unread.counts).toEqual({});
+    expect(data.unread.rmb).toEqual([]);
     expect(data.nextissue).toBe(111);
     expect(data.nextissuetime).toBe(1700005000);
     expect(data.issues.issues[0]?.id).toBe(111);
     expect(data.issues.issues[0]?.options.length).toBe(2);
     expect(data.issuesummary.issues[0]?.optionCount).toBe(2);
     expect(data.notices.notices[0]?.id).toBe(900);
+  });
+
+  test("parses structured unread shard", () => {
+    const xml = [
+      '<NATION id="testlandia">',
+      "<UNREAD>",
+      "<ISSUES>1</ISSUES>",
+      "<TELEGRAMS>19</TELEGRAMS>",
+      "<NOTICES>71</NOTICES>",
+      '<RMB region="The Rejected Realms">127</RMB>',
+      "<WA>0</WA>",
+      "<NEWS>1</NEWS>",
+      "</UNREAD>",
+      "</NATION>",
+    ].join("");
+
+    const data = parseNationPrivate(xml, ["unread"] as const);
+
+    expect(data.unread.total).toBe(219);
+    expect(data.unread.issues).toBe(1);
+    expect(data.unread.telegrams).toBe(19);
+    expect(data.unread.notices).toBe(71);
+    expect(data.unread.wa).toBe(0);
+    expect(data.unread.news).toBe(1);
+    expect(data.unread.counts).toEqual({
+      issues: 1,
+      telegrams: 19,
+      notices: 71,
+      wa: 0,
+      news: 1,
+    });
+    expect(data.unread.rmb).toEqual([{ region: "The Rejected Realms", count: 127 }]);
   });
 
   test("parses issue command result", () => {

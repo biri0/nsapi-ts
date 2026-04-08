@@ -104,13 +104,29 @@ export interface NationNoticesData {
   notices: NationNoticeData[];
 }
 
+export interface NationUnreadRmbCount {
+  region?: string;
+  count: number;
+}
+
+export interface NationUnreadData {
+  total: number;
+  counts: Record<string, number>;
+  issues?: number;
+  telegrams?: number;
+  notices?: number;
+  wa?: number;
+  news?: number;
+  rmb: NationUnreadRmbCount[];
+}
+
 export interface NationPrivateShardMap {
   issues: NationIssuesData;
   issuesummary: NationIssueSummaryData;
   nextissue: number;
   nextissuetime: number;
   notices: NationNoticesData;
-  unread: number;
+  unread: NationUnreadData;
 }
 
 export interface IssueCommandRankingData {

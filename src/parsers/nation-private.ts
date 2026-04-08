@@ -106,6 +106,74 @@ const parseNotices = (xml: string) => {
   return { notices };
 };
 
+const parseUnread = (
+  xml: string,
+  context: {
+    resource: "nation";
+    shard: "unread";
+    xml: string;
+  },
+) => {
+  const unreadBlock = readTagBlock(xml, "UNREAD");
+  if (!unreadBlock) {
+    const fallbackTotal = readNumberRequired(xml, "UNREAD", context);
+    return {
+      total: fallbackTotal,
+      counts: {},
+      rmb: [],
+    };
+  }
+
+  const unreadInner = readTextOptional(unreadBlock, "UNREAD") ?? "";
+  const childTagRegex = /<([A-Za-z0-9_:-]+)\b([^>]*)>([\s\S]*?)<\/\1>/g;
+  const counts: Record<string, number> = {};
+  const rmb: Array<{ region?: string; count: number }> = [];
+
+  for (const match of unreadInner.matchAll(childTagRegex)) {
+    const tag = (match[1] ?? "").toLowerCase();
+    const block = match[0] ?? "";
+    const value = toNumberOptional((match[3] ?? "").trim());
+
+    if (value === undefined) {
+      continue;
+    }
+
+    if (tag === "rmb") {
+      rmb.push({
+        region: readTagAttribute(block, "RMB", "region"),
+        count: value,
+      });
+      continue;
+    }
+
+    counts[tag] = (counts[tag] ?? 0) + value;
+  }
+
+  if (Object.keys(counts).length === 0 && rmb.length === 0) {
+    const fallbackTotal = readNumberRequired(xml, "UNREAD", context);
+    return {
+      total: fallbackTotal,
+      counts: {},
+      rmb: [],
+    };
+  }
+
+  const total =
+    Object.values(counts).reduce((sum, value) => sum + value, 0) +
+    rmb.reduce((sum, entry) => sum + entry.count, 0);
+
+  return {
+    total,
+    counts,
+    issues: counts.issues,
+    telegrams: counts.telegrams,
+    notices: counts.notices,
+    wa: counts.wa,
+    news: counts.news,
+    rmb,
+  };
+};
+
 export const parseNationPrivate = <TShards extends readonly NationPrivateShard[]>(
   xml: string,
   shards: TShards,
@@ -141,7 +209,7 @@ export const parseNationPrivate = <TShards extends readonly NationPrivateShard[]
         result.notices = parseNotices(xml);
         break;
       case "unread":
-        result.unread = readNumberRequired(xml, "UNREAD", {
+        result.unread = parseUnread(xml, {
           resource: "nation",
           shard,
           xml,

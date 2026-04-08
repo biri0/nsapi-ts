@@ -102,7 +102,7 @@ const issueResult = await ns.nation.issue({
 });
 
 const parsedIssueResult = parseIssueCommandResponse(issueResult);
-console.log(parsedPrivate.unread, parsedIssueResult.ok);
+console.log(parsedPrivate.unread.total, parsedPrivate.unread.issues, parsedIssueResult.ok);
 ```
 
 ## Test
