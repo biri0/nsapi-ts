@@ -1,11 +1,11 @@
 export class NSParseError extends Error {
-  readonly resource: "nation" | "region" | "world" | "wa";
+  readonly resource: "nation" | "region" | "world" | "wa" | "verify";
   readonly shard?: string;
   readonly tag?: string;
   readonly xmlSnippet: string;
 
   constructor(options: {
-    resource: "nation" | "region" | "world" | "wa";
+    resource: "nation" | "region" | "world" | "wa" | "verify";
     message: string;
     shard?: string;
     tag?: string;

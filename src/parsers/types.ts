@@ -64,6 +64,77 @@ export interface NationShardMap {
   dispatchlist: DispatchListData;
 }
 
+export interface NationIssueOption {
+  id: number;
+  text?: string;
+}
+
+export interface NationIssueSummaryItem {
+  id: number;
+  title?: string;
+  optionCount?: number;
+}
+
+export interface NationIssueData {
+  id: number;
+  title?: string;
+  text?: string;
+  author?: string;
+  editor?: string;
+  pic1?: string;
+  pic2?: string;
+  options: NationIssueOption[];
+}
+
+export interface NationIssuesData {
+  issues: NationIssueData[];
+}
+
+export interface NationIssueSummaryData {
+  issues: NationIssueSummaryItem[];
+}
+
+export interface NationNoticeData {
+  id?: number;
+  text?: string;
+  timestamp?: number;
+}
+
+export interface NationNoticesData {
+  notices: NationNoticeData[];
+}
+
+export interface NationPrivateShardMap {
+  issues: NationIssuesData;
+  issuesummary: NationIssueSummaryData;
+  nextissue: number;
+  nextissuetime: number;
+  notices: NationNoticesData;
+  unread: number;
+}
+
+export interface IssueCommandRankingData {
+  id?: number;
+  score?: number;
+  change?: number;
+  pchange?: number;
+  rank?: number;
+}
+
+export interface IssueCommandResult {
+  ok: boolean;
+  desc?: string;
+  rankings: IssueCommandRankingData[];
+  unlocks: string[];
+  reclassifications: string[];
+  newPolicies: string[];
+  removedPolicies: string[];
+}
+
+export interface VerifyData {
+  success: boolean;
+}
+
 export interface RegionShardMap {
   name: string;
   numnations: number;

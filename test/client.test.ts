@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { NSApiClient, NationStates } from "../src";
+import { NSApiClient, NSAuthError, NationStates } from "../src";
 
 const xmlOk = "<NATION><NAME>Testlandia</NAME></NATION>";
 
@@ -62,6 +62,62 @@ describe("NSApiClient", () => {
     expect(calls).toBe(2);
     expect(result.rateLimit.limit).toBe(50);
     expect(result.rateLimit.remaining).toBe(49);
+  });
+
+  test("captures auth headers from private requests", async () => {
+    const client = new NSApiClient({
+      userAgent: "nsapi-ts-test/0.1 (https://github.com/Biri0/nsapi-ts)",
+      auth: { password: "hunter2" },
+      fetchImpl: async (_input, init) => {
+        const headers = new Headers(init?.headers);
+        expect(headers.get("X-Password")).toBe("hunter2");
+
+        return new Response("<NATION><UNREAD>4</UNREAD></NATION>", {
+          status: 200,
+          headers: {
+            "X-Pin": "1234567890",
+            "X-Autologin": "AUTOLOGIN_CODE",
+          },
+        });
+      },
+    });
+
+    const response = await client.nationPrivate("Testlandia", ["unread"]);
+    expect(response.auth.pin).toBe("1234567890");
+    expect(response.auth.autologin).toBe("AUTOLOGIN_CODE");
+  });
+
+  test("rejects private requests without auth", async () => {
+    const client = new NSApiClient({
+      userAgent: "nsapi-ts-test/0.1 (https://github.com/Biri0/nsapi-ts)",
+      fetchImpl: async () => new Response("ok"),
+    });
+
+    await expect(client.nationPrivate("Testlandia", ["unread"])).rejects.toThrow(NSAuthError);
+  });
+
+  test("verify API builds request", async () => {
+    const seen: URL[] = [];
+    const client = new NSApiClient({
+      userAgent: "nsapi-ts-test/0.1 (https://github.com/Biri0/nsapi-ts)",
+      fetchImpl: async (input) => {
+        seen.push(new URL(String(input)));
+        return new Response("1", { status: 200 });
+      },
+    });
+
+    await client.verify("Testlandia", "abcdef", "tok123", ["name", "population"]);
+    const url = seen[0];
+    expect(url).toBeDefined();
+    if (!url) {
+      throw new Error("Expected verify URL to be captured");
+    }
+
+    expect(url.searchParams.get("a")).toBe("verify");
+    expect(url.searchParams.get("nation")).toBe("testlandia");
+    expect(url.searchParams.get("checksum")).toBe("abcdef");
+    expect(url.searchParams.get("token")).toBe("tok123");
+    expect(url.searchParams.get("q")).toBe("name+population");
   });
 });
 

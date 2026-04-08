@@ -1,6 +1,6 @@
 import { NSParseError } from "./errors";
 
-export type ResourceKind = "nation" | "region" | "world" | "wa";
+export type ResourceKind = "nation" | "region" | "world" | "wa" | "verify";
 
 const escapeRegExp = (value: string): string => {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

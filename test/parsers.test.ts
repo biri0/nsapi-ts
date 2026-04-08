@@ -1,8 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import {
   NSParseError,
+  parseIssueCommand,
   parseNation,
+  parseNationPrivate,
   parseRegion,
+  parseVerify,
   parseWA,
   parseWorld,
 } from "../src";
@@ -217,5 +220,69 @@ describe("XML parsers", () => {
     expect(() => {
       parseNation(xml, ["name"] as const);
     }).toThrow(NSParseError);
+  });
+
+  test("parses private nation shards", () => {
+    const xml = [
+      "<NATION>",
+      "<UNREAD>7</UNREAD>",
+      "<NEXTISSUE>111</NEXTISSUE>",
+      "<NEXTISSUETIME>1700005000</NEXTISSUETIME>",
+      "<ISSUES>",
+      '<ISSUE id="111">',
+      "<TITLE>A Testing Issue</TITLE>",
+      "<TEXT>Choose wisely</TEXT>",
+      '<OPTION id="0"><TEXT>Option A</TEXT></OPTION>',
+      '<OPTION id="1"><TEXT>Option B</TEXT></OPTION>',
+      "</ISSUE>",
+      "</ISSUES>",
+      "<ISSUESUMMARY>",
+      '<ISSUE id="111" optioncount="2"><TITLE>A Testing Issue</TITLE></ISSUE>',
+      "</ISSUESUMMARY>",
+      "<NOTICES>",
+      '<NOTICE id="900" timestamp="1700005010"><TEXT>Welcome</TEXT></NOTICE>',
+      "</NOTICES>",
+      "</NATION>",
+    ].join("");
+
+    const data = parseNationPrivate(
+      xml,
+      ["unread", "nextissue", "nextissuetime", "issues", "issuesummary", "notices"] as const,
+    );
+
+    expect(data.unread).toBe(7);
+    expect(data.nextissue).toBe(111);
+    expect(data.nextissuetime).toBe(1700005000);
+    expect(data.issues.issues[0]?.id).toBe(111);
+    expect(data.issues.issues[0]?.options.length).toBe(2);
+    expect(data.issuesummary.issues[0]?.optionCount).toBe(2);
+    expect(data.notices.notices[0]?.id).toBe(900);
+  });
+
+  test("parses issue command result", () => {
+    const xml = [
+      "<NATION>",
+      "<OK>1</OK>",
+      "<DESC>Legislation enacted.</DESC>",
+      "<RANKINGS>",
+      '<RANK id="66" score="12.1" change="1.2" pchange="5.0" rank="100"></RANK>',
+      "</RANKINGS>",
+      "<UNLOCKS><UNLOCK>Policy A</UNLOCK></UNLOCKS>",
+      "<NEW_POLICIES><POLICY>Policy B</POLICY></NEW_POLICIES>",
+      "</NATION>",
+    ].join("");
+
+    const parsed = parseIssueCommand(xml);
+    expect(parsed.ok).toBe(true);
+    expect(parsed.desc).toContain("enacted");
+    expect(parsed.rankings[0]?.id).toBe(66);
+    expect(parsed.unlocks).toEqual(["Policy A"]);
+    expect(parsed.newPolicies).toEqual(["Policy B"]);
+  });
+
+  test("parses verification responses", () => {
+    expect(parseVerify("1").success).toBe(true);
+    expect(parseVerify("0").success).toBe(false);
+    expect(parseVerify("<NATION><VERIFY>1</VERIFY><NAME>Testlandia</NAME></NATION>").success).toBe(true);
   });
 });
