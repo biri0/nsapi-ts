@@ -25,6 +25,21 @@ export const readTagBlocks = (xml: string, tag: string): string[] => {
   return matches ?? [];
 };
 
+export const readSimpleTagTexts = (xml: string, tag: string): string[] => {
+  const tagPattern = escapeRegExp(tag);
+  const regex = new RegExp(`<${tagPattern}\\b[^>]*>\\s*([^<]+?)\\s*</${tagPattern}>`, "gi");
+  const values: string[] = [];
+
+  for (const match of xml.matchAll(regex)) {
+    const value = match[1]?.trim();
+    if (value) {
+      values.push(value);
+    }
+  }
+
+  return values;
+};
+
 export const readTagAttribute = (
   xml: string,
   tag: string,
@@ -35,6 +50,12 @@ export const readTagAttribute = (
   const match = xml.match(
     new RegExp(`<${tagPattern}\\b[^>]*\\b${attrPattern}=["']([^"']+)["'][^>]*>`, "i"),
   );
+  return match?.[1];
+};
+
+export const readAnyTagAttribute = (xml: string, attribute: string): string | undefined => {
+  const attrPattern = escapeRegExp(attribute);
+  const match = xml.match(new RegExp(`<[^>]+\\b${attrPattern}=["']([^"']+)["'][^>]*>`, "i"));
   return match?.[1];
 };
 

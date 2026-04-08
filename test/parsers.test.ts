@@ -66,6 +66,27 @@ describe("XML parsers", () => {
     expect(data.happenings.events[1]?.type).toBe("change");
   });
 
+  test("parses nation dispatchlist shard", () => {
+    const xml = [
+      "<NATION>",
+      "<DISPATCHLIST>",
+      '<DISPATCH id="12" title="One" author="testlandia" category="Factbook" subcategory="History" created="1700000000" edited="1700000100" score="5" views="200"></DISPATCH>',
+      "<DISPATCH>",
+      "<ID>13</ID>",
+      "<TITLE>Two</TITLE>",
+      "<AUTHOR>testlandia</AUTHOR>",
+      "</DISPATCH>",
+      "</DISPATCHLIST>",
+      "</NATION>",
+    ].join("");
+
+    const data = parseNation(xml, ["dispatchlist"] as const);
+    expect(data.dispatchlist.dispatches.length).toBe(2);
+    expect(data.dispatchlist.dispatches[0]?.id).toBe(12);
+    expect(data.dispatchlist.dispatches[0]?.views).toBe(200);
+    expect(data.dispatchlist.dispatches[1]?.title).toBe("Two");
+  });
+
   test("parses region shards", () => {
     const xml = [
       "<REGION>",
@@ -118,6 +139,21 @@ describe("XML parsers", () => {
     expect(data.happenings.events[0]?.type).toBe("founding");
   });
 
+  test("parses world dispatchlist shard", () => {
+    const xml = [
+      "<WORLD>",
+      "<DISPATCHLIST>",
+      '<DISPATCH id="99" title="World Post" author="author_nation"></DISPATCH>',
+      "</DISPATCHLIST>",
+      "</WORLD>",
+    ].join("");
+
+    const data = parseWorld(xml, ["dispatchlist"] as const);
+    expect(data.dispatchlist.dispatches.length).toBe(1);
+    expect(data.dispatchlist.dispatches[0]?.id).toBe(99);
+    expect(data.dispatchlist.dispatches[0]?.author).toBe("author_nation");
+  });
+
   test("parses wa shards", () => {
     const xml = [
       "<WA>",
@@ -137,6 +173,34 @@ describe("XML parsers", () => {
     expect(data.delegates).toEqual(["a", "b"]);
     expect(data.resolution.id).toBe(22);
     expect(data.resolution.name).toBe("Test Resolution");
+  });
+
+  test("parses wa vote-detail shards", () => {
+    const xml = [
+      "<WA>",
+      "<VOTERS>a,b,c</VOTERS>",
+      "<VOTETRACK>",
+      '<ENTRY nation="a" vote="for" timestamp="1700000001"></ENTRY>',
+      '<ENTRY nation="b" vote="against" timestamp="1700000002"></ENTRY>',
+      "</VOTETRACK>",
+      "<DELLOG>",
+      '<DELEGATE nation="delegate_one" vote="for"></DELEGATE>',
+      "</DELLOG>",
+      "<DELVOTES>",
+      "<VOTE>",
+      "<NATION>delegate_two</NATION>",
+      "<VOTE>against</VOTE>",
+      "</VOTE>",
+      "</DELVOTES>",
+      "</WA>",
+    ].join("");
+
+    const data = parseWA(xml, ["voters", "votetrack", "dellog", "delvotes"] as const);
+    expect(data.voters).toEqual(["a", "b", "c"]);
+    expect(data.votetrack.length).toBe(2);
+    expect(data.votetrack[0]?.nation).toBe("a");
+    expect(data.dellog[0]?.delegate).toBe("delegate_one");
+    expect(data.delvotes[0]?.vote).toBe("against");
   });
 
   test("throws for unsupported shard", () => {

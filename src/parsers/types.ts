@@ -28,6 +28,29 @@ export interface HappeningsData {
   events: HappeningEvent[];
 }
 
+export interface DispatchSummary {
+  id?: number;
+  title?: string;
+  author?: string;
+  category?: string;
+  subcategory?: string;
+  created?: number;
+  edited?: number;
+  score?: number;
+  views?: number;
+}
+
+export interface DispatchListData {
+  dispatches: DispatchSummary[];
+}
+
+export interface WAVoteEntry {
+  nation?: string;
+  delegate?: string;
+  vote?: string;
+  timestamp?: number;
+}
+
 export interface NationShardMap {
   name: string;
   region: string;
@@ -38,6 +61,7 @@ export interface NationShardMap {
   endorsements: string[];
   census: CensusData;
   happenings: HappeningsData;
+  dispatchlist: DispatchListData;
 }
 
 export interface RegionShardMap {
@@ -58,6 +82,7 @@ export interface WorldShardMap {
   lasteventid: number;
   census: CensusData;
   happenings: HappeningsData;
+  dispatchlist: DispatchListData;
 }
 
 export interface WAResolutionData {
@@ -74,6 +99,10 @@ export interface WAShardMap {
   delegates: string[];
   members: string[];
   resolution: WAResolutionData;
+  voters: string[];
+  votetrack: WAVoteEntry[];
+  dellog: WAVoteEntry[];
+  delvotes: WAVoteEntry[];
 }
 
 export type ParsedByShards<

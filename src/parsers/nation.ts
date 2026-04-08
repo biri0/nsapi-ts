@@ -9,6 +9,7 @@ import type {
 } from "./types";
 import {
   ensureSupportedShard,
+  readAnyTagAttribute,
   readTagAttribute,
   readTagBlock,
   readTagBlocks,
@@ -33,6 +34,7 @@ const SUPPORTED_SHARDS = new Set<NationShard>([
   "endorsements",
   "census",
   "happenings",
+  "dispatchlist",
 ]);
 
 const parseCensusScale = (scaleXml: string): CensusScaleData => {
@@ -87,6 +89,31 @@ const parseHappenings = (xml: string): HappeningsData => {
   return { events };
 };
 
+const parseDispatchList = (xml: string) => {
+  const dispatchListBlock = readTagBlock(xml, "DISPATCHLIST");
+  if (!dispatchListBlock) {
+    return { dispatches: [] };
+  }
+
+  const entries = readTagBlocks(dispatchListBlock, "DISPATCH").map((dispatchXml) => ({
+    id: toNumberOptional(readAnyTagAttribute(dispatchXml, "id") ?? readTextOptional(dispatchXml, "ID")),
+    title: readAnyTagAttribute(dispatchXml, "title") ?? readTextOptional(dispatchXml, "TITLE"),
+    author: readAnyTagAttribute(dispatchXml, "author") ?? readTextOptional(dispatchXml, "AUTHOR"),
+    category:
+      readAnyTagAttribute(dispatchXml, "category") ?? readTextOptional(dispatchXml, "CATEGORY"),
+    subcategory:
+      readAnyTagAttribute(dispatchXml, "subcategory") ?? readTextOptional(dispatchXml, "SUBCATEGORY"),
+    created:
+      toNumberOptional(readAnyTagAttribute(dispatchXml, "created") ?? readTextOptional(dispatchXml, "CREATED")),
+    edited:
+      toNumberOptional(readAnyTagAttribute(dispatchXml, "edited") ?? readTextOptional(dispatchXml, "EDITED")),
+    score: toNumberOptional(readAnyTagAttribute(dispatchXml, "score") ?? readTextOptional(dispatchXml, "SCORE")),
+    views: toNumberOptional(readAnyTagAttribute(dispatchXml, "views") ?? readTextOptional(dispatchXml, "VIEWS")),
+  }));
+
+  return { dispatches: entries };
+};
+
 export const parseNation = <TShards extends readonly NationShard[]>(
   xml: string,
   shards: TShards,
@@ -134,6 +161,9 @@ export const parseNation = <TShards extends readonly NationShard[]>(
         break;
       case "happenings":
         result.happenings = parseHappenings(xml);
+        break;
+      case "dispatchlist":
+        result.dispatchlist = parseDispatchList(xml);
         break;
     }
   }

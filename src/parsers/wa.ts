@@ -1,12 +1,16 @@
 import type { NSApiResponse } from "../types";
-import type { ParsedByShards, WAShardMap, WAResolutionData } from "./types";
+import type { ParsedByShards, WAShardMap, WAResolutionData, WAVoteEntry } from "./types";
 import {
   ensureSupportedShard,
+  readAnyTagAttribute,
   readTagAttribute,
   readTagBlock,
+  readTagBlocks,
+  readSimpleTagTexts,
   readNumberRequired,
   readTextOptional,
   splitList,
+  toNumberOptional,
   throwOnApiErrorTag,
 } from "./xml-helpers";
 
@@ -18,6 +22,10 @@ const SUPPORTED_SHARDS = new Set<WAShard>([
   "delegates",
   "members",
   "resolution",
+  "voters",
+  "votetrack",
+  "dellog",
+  "delvotes",
 ]);
 
 const parseResolution = (xml: string): WAResolutionData => {
@@ -36,6 +44,62 @@ const parseResolution = (xml: string): WAResolutionData => {
     desc: readTextOptional(block, "DESC"),
     proposer: readTextOptional(block, "PROPOSED_BY") ?? readTextOptional(block, "PROPOSER"),
   };
+};
+
+const parseVoteEntry = (entryXml: string): WAVoteEntry => {
+  const nation =
+    readAnyTagAttribute(entryXml, "nation") ??
+    readTextOptional(entryXml, "NATION") ??
+    readTextOptional(entryXml, "NAME");
+  const delegate =
+    readAnyTagAttribute(entryXml, "delegate") ??
+    readTextOptional(entryXml, "DELEGATE") ??
+    readTextOptional(entryXml, "NATION") ??
+    nation;
+
+  return {
+    nation,
+    delegate,
+    vote: readAnyTagAttribute(entryXml, "vote") ?? readTextOptional(entryXml, "VOTE"),
+    timestamp:
+      toNumberOptional(readAnyTagAttribute(entryXml, "timestamp")) ??
+      toNumberOptional(readTextOptional(entryXml, "TIMESTAMP")),
+  };
+};
+
+const parseVoteEntriesFromBlock = (xml: string, blockTag: string): WAVoteEntry[] => {
+  const block = readTagBlock(xml, blockTag);
+  if (!block) {
+    return [];
+  }
+
+  const explicitEntries = readTagBlocks(block, "ENTRY");
+  if (explicitEntries.length > 0) {
+    return explicitEntries.map(parseVoteEntry);
+  }
+
+  const delegates = readTagBlocks(block, "DELEGATE");
+  if (delegates.length > 0) {
+    return delegates.map(parseVoteEntry);
+  }
+
+  const nations = readTagBlocks(block, "NATION");
+  if (nations.length > 0) {
+    const voteTexts = readSimpleTagTexts(block, "VOTE");
+    return nations.map((nationXml, index) => ({
+      nation: readTextOptional(nationXml, "NATION"),
+      delegate: readTextOptional(nationXml, "NATION"),
+      vote: voteTexts[index],
+    }));
+  }
+
+  const votes = readTagBlocks(block, "VOTE");
+  return votes.map(parseVoteEntry);
+};
+
+const parseVoters = (xml: string): string[] => {
+  const voters = readTextOptional(xml, "VOTERS");
+  return splitList(voters, ",");
 };
 
 export const parseWA = <TShards extends readonly WAShard[]>(
@@ -75,6 +139,18 @@ export const parseWA = <TShards extends readonly WAShard[]>(
       }
       case "resolution":
         result.resolution = parseResolution(xml);
+        break;
+      case "voters":
+        result.voters = parseVoters(xml);
+        break;
+      case "votetrack":
+        result.votetrack = parseVoteEntriesFromBlock(xml, "VOTETRACK");
+        break;
+      case "dellog":
+        result.dellog = parseVoteEntriesFromBlock(xml, "DELLOG");
+        break;
+      case "delvotes":
+        result.delvotes = parseVoteEntriesFromBlock(xml, "DELVOTES");
         break;
     }
   }
