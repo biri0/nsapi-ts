@@ -27,6 +27,45 @@ describe("XML parsers", () => {
     expect(data.endorsements).toEqual(["a", "b", "c"]);
   });
 
+  test("parses nation census and happenings shards", () => {
+    const xml = [
+      "<NATION>",
+      "<CENSUS>",
+      '<SCALE id="66">',
+      "<SCORE>12.3</SCORE>",
+      "<RANK>15</RANK>",
+      "<RRANK>2</RRANK>",
+      "<PRANK>1.5</PRANK>",
+      "<PRRANK>0.2</PRRANK>",
+      "<HISTORY>",
+      '<POINT timestamp="1700000000" score="11.1"></POINT>',
+      '<POINT timestamp="1700000300" score="12.3"></POINT>',
+      "</HISTORY>",
+      "</SCALE>",
+      "</CENSUS>",
+      "<HAPPENINGS>",
+      '<EVENT id="100" timestamp="1700000500">',
+      "<TEXT>Test event 1</TEXT>",
+      "</EVENT>",
+      "<EVENT>",
+      "<TIMESTAMP>1700000600</TIMESTAMP>",
+      "<STR>Test event 2</STR>",
+      "<TYPE>change</TYPE>",
+      "</EVENT>",
+      "</HAPPENINGS>",
+      "</NATION>",
+    ].join("");
+
+    const data = parseNation(xml, ["census", "happenings"] as const);
+
+    expect(data.census.scales.length).toBe(1);
+    expect(data.census.scales[0]?.id).toBe(66);
+    expect(data.census.scales[0]?.history.length).toBe(2);
+    expect(data.happenings.events.length).toBe(2);
+    expect(data.happenings.events[0]?.id).toBe(100);
+    expect(data.happenings.events[1]?.type).toBe("change");
+  });
+
   test("parses region shards", () => {
     const xml = [
       "<REGION>",
@@ -53,6 +92,30 @@ describe("XML parsers", () => {
     expect(data.numnations).toBe(1000);
     expect(data.newnations).toEqual(["n1", "n2"]);
     expect(data.lasteventid).toBe(400);
+  });
+
+  test("parses world census and happenings shards", () => {
+    const xml = [
+      "<WORLD>",
+      "<CENSUS>",
+      '<SCALE id="77">',
+      "<SCORE>88.8</SCORE>",
+      "<RANK>9</RANK>",
+      "</SCALE>",
+      "</CENSUS>",
+      "<HAPPENINGS>",
+      '<EVENT id="101" timestamp="1700000700">',
+      "<TEXT>World event</TEXT>",
+      "<TYPE>founding</TYPE>",
+      "</EVENT>",
+      "</HAPPENINGS>",
+      "</WORLD>",
+    ].join("");
+
+    const data = parseWorld(xml, ["census", "happenings"] as const);
+    expect(data.census.scales[0]?.id).toBe(77);
+    expect(data.census.scales[0]?.score).toBe(88.8);
+    expect(data.happenings.events[0]?.type).toBe("founding");
   });
 
   test("parses wa shards", () => {

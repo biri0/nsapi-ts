@@ -1,11 +1,23 @@
 import type { NSApiResponse } from "../types";
-import type { ParsedByShards, WorldShardMap } from "./types";
+import type {
+  CensusData,
+  CensusScaleData,
+  HappeningEvent,
+  HappeningsData,
+  ParsedByShards,
+  WorldShardMap,
+} from "./types";
 import {
   ensureSupportedShard,
+  readTagAttribute,
+  readTagBlock,
+  readTagBlocks,
+  readTagText,
   readNumberRequired,
   readTextOptional,
   readTextRequired,
   splitList,
+  toNumberOptional,
   throwOnApiErrorTag,
 } from "./xml-helpers";
 
@@ -17,7 +29,61 @@ const SUPPORTED_SHARDS = new Set<WorldShard>([
   "featuredregion",
   "newnations",
   "lasteventid",
+  "census",
+  "happenings",
 ]);
+
+const parseCensusScale = (scaleXml: string): CensusScaleData => {
+  const historyContainer = readTagBlock(scaleXml, "HISTORY");
+  const historyPoints = historyContainer
+    ? readTagBlocks(historyContainer, "POINT").map((pointXml) => ({
+        timestamp:
+          toNumberOptional(readTagAttribute(pointXml, "POINT", "timestamp")) ??
+          toNumberOptional(readTagText(pointXml, "TIMESTAMP")),
+        score:
+          toNumberOptional(readTagAttribute(pointXml, "POINT", "score")) ??
+          toNumberOptional(readTagText(pointXml, "SCORE")),
+      }))
+    : [];
+
+  return {
+    id: toNumberOptional(readTagAttribute(scaleXml, "SCALE", "id")),
+    score: toNumberOptional(readTextOptional(scaleXml, "SCORE")),
+    rank: toNumberOptional(readTextOptional(scaleXml, "RANK")),
+    regionRank: toNumberOptional(readTextOptional(scaleXml, "RRANK")),
+    worldPercentRank: toNumberOptional(readTextOptional(scaleXml, "PRANK")),
+    regionPercentRank: toNumberOptional(readTextOptional(scaleXml, "PRRANK")),
+    history: historyPoints,
+  };
+};
+
+const parseCensus = (xml: string): CensusData => {
+  const censusBlock = readTagBlock(xml, "CENSUS");
+  if (!censusBlock) {
+    return { scales: [] };
+  }
+
+  const scales = readTagBlocks(censusBlock, "SCALE").map(parseCensusScale);
+  return { scales };
+};
+
+const parseHappenings = (xml: string): HappeningsData => {
+  const happeningsBlock = readTagBlock(xml, "HAPPENINGS");
+  if (!happeningsBlock) {
+    return { events: [] };
+  }
+
+  const events = readTagBlocks(happeningsBlock, "EVENT").map((eventXml): HappeningEvent => ({
+    id: toNumberOptional(readTagAttribute(eventXml, "EVENT", "id")),
+    timestamp:
+      toNumberOptional(readTagAttribute(eventXml, "EVENT", "timestamp")) ??
+      toNumberOptional(readTextOptional(eventXml, "TIMESTAMP")),
+    text: readTextOptional(eventXml, "TEXT") ?? readTextOptional(eventXml, "STR"),
+    type: readTextOptional(eventXml, "TYPE"),
+  }));
+
+  return { events };
+};
 
 export const parseWorld = <TShards extends readonly WorldShard[]>(
   xml: string,
@@ -62,6 +128,12 @@ export const parseWorld = <TShards extends readonly WorldShard[]>(
           shard,
           xml,
         });
+        break;
+      case "census":
+        result.census = parseCensus(xml);
+        break;
+      case "happenings":
+        result.happenings = parseHappenings(xml);
         break;
     }
   }

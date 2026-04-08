@@ -18,6 +18,13 @@ export const readTagBlock = (xml: string, tag: string): string | undefined => {
   return match?.[0];
 };
 
+export const readTagBlocks = (xml: string, tag: string): string[] => {
+  const tagPattern = escapeRegExp(tag);
+  const regex = new RegExp(`<${tagPattern}\\b[^>]*>[\\s\\S]*?</${tagPattern}>`, "gi");
+  const matches = xml.match(regex);
+  return matches ?? [];
+};
+
 export const readTagAttribute = (
   xml: string,
   tag: string,
@@ -40,6 +47,15 @@ export const splitList = (value: string | undefined, delimiter = ","): string[] 
     .split(delimiter)
     .map((item) => item.trim())
     .filter((item) => item.length > 0);
+};
+
+export const toNumberOptional = (value: string | undefined): number | undefined => {
+  if (!value) {
+    return undefined;
+  }
+
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : undefined;
 };
 
 export const readTextOptional = (xml: string, tag: string): string | undefined => {

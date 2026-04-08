@@ -1,3 +1,33 @@
+export interface CensusHistoryPoint {
+  timestamp?: number;
+  score?: number;
+}
+
+export interface CensusScaleData {
+  id?: number;
+  score?: number;
+  rank?: number;
+  regionRank?: number;
+  worldPercentRank?: number;
+  regionPercentRank?: number;
+  history: CensusHistoryPoint[];
+}
+
+export interface CensusData {
+  scales: CensusScaleData[];
+}
+
+export interface HappeningEvent {
+  id?: number;
+  timestamp?: number;
+  text?: string;
+  type?: string;
+}
+
+export interface HappeningsData {
+  events: HappeningEvent[];
+}
+
 export interface NationShardMap {
   name: string;
   region: string;
@@ -6,6 +36,8 @@ export interface NationShardMap {
   motto: string;
   category: string;
   endorsements: string[];
+  census: CensusData;
+  happenings: HappeningsData;
 }
 
 export interface RegionShardMap {
@@ -24,6 +56,8 @@ export interface WorldShardMap {
   featuredregion: string;
   newnations: string[];
   lasteventid: number;
+  census: CensusData;
+  happenings: HappeningsData;
 }
 
 export interface WAResolutionData {

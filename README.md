@@ -62,6 +62,7 @@ All methods return:
 - This wrapper currently targets read-only public endpoints.
 - Nation/region names are normalized to lowercase with underscores.
 - Parsers are shard-specific; requesting an unsupported parser shard throws `NSParseError`.
+- Current parser coverage includes basic shards plus `census` and `happenings` for nation/world.
 
 ## Test
 
