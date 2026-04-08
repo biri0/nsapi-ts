@@ -29,6 +29,20 @@ const world = await ns.world.get({ shards: ["numnations"] });
 console.log(world.rateLimit.remaining);
 ```
 
+You can parse supported shards into typed data:
+
+```ts
+import { parseNationResponse } from "./src";
+
+const response = await ns.nation.get({
+  nation: "Testlandia",
+  shards: ["name", "population", "endorsements"],
+});
+
+const nation = parseNationResponse(response, ["name", "population", "endorsements"] as const);
+console.log(nation.population);
+```
+
 ## Exposed resources
 
 - `ns.nation.get({ nation, shards?, params? })`
@@ -47,6 +61,7 @@ All methods return:
 - `userAgent` is required by NationStates API terms.
 - This wrapper currently targets read-only public endpoints.
 - Nation/region names are normalized to lowercase with underscores.
+- Parsers are shard-specific; requesting an unsupported parser shard throws `NSParseError`.
 
 ## Test
 

@@ -8,6 +8,12 @@ import type { NSApiClientOptions } from "./types";
 export * from "./client";
 export * from "./types";
 export * from "./xml";
+export * from "./parsers/errors";
+export * from "./parsers/types";
+export * from "./parsers/nation";
+export * from "./parsers/region";
+export * from "./parsers/world";
+export * from "./parsers/wa";
 
 export class NationStates {
   readonly client: NSApiClient;
