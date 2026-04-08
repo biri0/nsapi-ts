@@ -293,6 +293,38 @@ describe("XML parsers", () => {
     expect(data.unread.rmb).toEqual([{ region: "The Rejected Realms", count: 127 }]);
   });
 
+  test("parses issues and notices when unread contains same-named counters", () => {
+    const xml = [
+      '<NATION id="testlandia">',
+      "<UNREAD>",
+      "<ISSUES>1</ISSUES>",
+      "<NOTICES>71</NOTICES>",
+      "</UNREAD>",
+      "<ISSUES>",
+      '<ISSUE id="160">',
+      "<TITLE>Truancy on the Rise</TITLE>",
+      "<TEXT>Issue body</TEXT>",
+      '<OPTION id="0">Option A</OPTION>',
+      "</ISSUE>",
+      "</ISSUES>",
+      "<NOTICES>",
+      '<NOTICE id="901" timestamp="1700005020"><TEXT>Actual notice</TEXT></NOTICE>',
+      "</NOTICES>",
+      "</NATION>",
+    ].join("");
+
+    const data = parseNationPrivate(xml, ["issues", "notices", "unread"] as const);
+
+    expect(data.unread.issues).toBe(1);
+    expect(data.unread.notices).toBe(71);
+    expect(data.issues.issues.length).toBe(1);
+    expect(data.issues.issues[0]?.id).toBe(160);
+    expect(data.issues.issues[0]?.title).toBe("Truancy on the Rise");
+    expect(data.notices.notices.length).toBe(1);
+    expect(data.notices.notices[0]?.id).toBe(901);
+    expect(data.notices.notices[0]?.text).toBe("Actual notice");
+  });
+
   test("parses issue command result", () => {
     const xml = [
       "<NATION>",

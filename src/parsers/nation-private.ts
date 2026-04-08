@@ -58,7 +58,7 @@ const parseIssue = (xml: string): NationIssueData => {
 };
 
 const parseIssues = (xml: string) => {
-  const issuesBlock = readTagBlock(xml, "ISSUES");
+  const issuesBlock = readTagBlocks(xml, "ISSUES").find((block) => readTagBlocks(block, "ISSUE").length > 0);
   if (!issuesBlock) {
     return { issues: [] };
   }
@@ -90,7 +90,9 @@ const parseIssueSummary = (xml: string) => {
 };
 
 const parseNotices = (xml: string) => {
-  const noticesBlock = readTagBlock(xml, "NOTICES");
+  const noticesBlock =
+    readTagBlocks(xml, "NOTICES").find((block) => readTagBlocks(block, "NOTICE").length > 0) ??
+    readTagBlock(xml, "NOTICES");
   if (!noticesBlock) {
     return { notices: [] };
   }
